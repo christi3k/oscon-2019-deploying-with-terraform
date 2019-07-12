@@ -1,0 +1,9 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://192.168.99.103:31112
+functions:
+  primes:
+    lang: python3
+    handler: ./primes
+    image: christi3k/primes:0.0.1
