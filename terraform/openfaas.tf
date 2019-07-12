@@ -14,6 +14,7 @@ resource "openfaas_function" "function_hello" {
   ]
   lifecycle = {
     create_before_destroy = true
+    ignore_changes = ["labels.uid",]
   }
   labels = {
     depends_on = "${helm_release.openfaas.name}"

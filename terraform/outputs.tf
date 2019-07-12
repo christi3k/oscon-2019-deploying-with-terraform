@@ -7,31 +7,14 @@
 
 output "openfaas-metadata" {
   value = "${data.kubernetes_service.openfaas.metadata}"
-    #depends_on = [
-        #"helm_release.openfaas"
-    #]
 }
 
 output "openfaas-spec" {
   value = "${data.kubernetes_service.openfaas.spec}"
-    #depends_on = [
-        #"helm_release.openfaas"
-    #]
 }
 
 output "openfaas_url" {
   value = "${data.external.openfaas.result["openfaas_url"]}"
-  #depends_on = [
-      #"helm_release.openfaas"
-  #]
-}
-
-
-output "clusterip" {
-  value = "${data.kubernetes_service.openfaas.spec.0.cluster_ip}"
-    depends_on = [
-        "helm_release.openfaas"
-    ]
 }
 
 #Outputs:
