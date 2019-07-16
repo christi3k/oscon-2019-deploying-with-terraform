@@ -21,6 +21,7 @@ resource "kubernetes_pod" "grafana" {
 resource "kubernetes_service" "grafana" {
   metadata {
     name = "grafana"
+    namespace = "openfaas"
   }
   spec {
     selector {
