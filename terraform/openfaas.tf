@@ -8,7 +8,7 @@ provider "openfaas" {
 
 resource "openfaas_function" "function_hello" {
   name            = "hello"
-  image           = "christi3k/hello:0.0.2"
+  image           = "christi3k/hello:0.0.1"
   depends_on = [
       "helm_release.openfaas"
   ]
@@ -23,7 +23,7 @@ resource "openfaas_function" "function_hello" {
 
   annotations {
     #CreatedDate = "Fri Jul 12 07:15:55 PDT 2019"
-    prometheus.io.scrape = "false"
+    #prometheus.io.scrape = "false"
   }
 }
 
@@ -37,11 +37,12 @@ resource "openfaas_function" "function_primes" {
   labels = {
     depends_on = "${helm_release.openfaas.name}"
     faas_function = "primes"
+    com.openfaas.scale.max = 10
   }
 
   annotations {
     #CreatedDate = "Fri Jul 12 07:15:55 PDT 2019"
-    prometheus.io.scrape = "false"
+    #prometheus.io.scrape = "false"
   }
 }
 

@@ -299,3 +299,31 @@ port = [
 ]
 
 
+---------------
+
+Updating labels with computed uids, for example...
+
+can use data sources after they are created.
+
+data "openfaas_function" "function_hello" {
+  name = "hello"
+  #labels = "${openfaas_function.function_hello.labels}"
+}
+ 
+
+and then this in `resource "openfaas_function" "function_hello"`:
+
+  labels = {
+    #depends_on = "${helm_release.openfaas.name}"
+    faas_function = "hello"
+    canary = "false"
+    uid = "${data.openfaas_function.function_hello.labels.uid}"
+  }
+
+or in `outputs.tf`:
+
+output "openfaas_primes_uid" {
+  value = "${data.openfaas_function.function_primes.labels.uid}"
+}
+
+

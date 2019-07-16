@@ -1,9 +1,11 @@
 version: 1.0
 provider:
   name: openfaas
-  gateway: http://192.168.99.102:31112
 functions:
   hello:
     lang: python3
     handler: ./hello
     image: christi3k/hello:0.0.2
+    labels:
+      canary: false
+      favorite: true

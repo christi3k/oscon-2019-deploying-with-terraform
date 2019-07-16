@@ -1,6 +1,7 @@
 # not a lot of config needed since we're running locally.
 provider "kubernetes" {}
 
+# don't need this:
 data "kubernetes_service" "openfaas" {
   metadata {
     name = "gateway-external"
@@ -74,43 +75,3 @@ resource "kubernetes_secret" "openfaas" {
 }
 
 
-#resource "kubernetes_pod" "nginx" {
-  #metadata {
-    #name = "nginx-example"
-    #labels = {
-      #App = "nginx"
-    #}
-  #}
-
-  #spec {
-    #container {
-      #image = "nginx:1.7.8"
-      #name  = "example"
-
-      #port {
-        #container_port = 80
-      #}
-    #}
-  #}
-#}
-
-#resource "kubernetes_service" "nginx" {
-  #metadata {
-    #name = "nginx-example"
-  #}
-  #spec {
-    #selector {
-      #App = "${kubernetes_pod.nginx.metadata.0.labels.App}"
-    #}
-    #port {
-      #port = 80
-      #target_port = 80
-    #}
-
-    #type = "NodePort"
-  #}
-#}
-
-#output "np_ip" {
-  #value = "${kubernetes_service.nginx.spec.0.nodePort}"
-#}
