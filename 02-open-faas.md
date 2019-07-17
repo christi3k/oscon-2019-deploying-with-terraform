@@ -1,12 +1,14 @@
 ## Installing OpenFaas
 
-Next, we're going to install OpenFaas. We're going to do this using Terraform. While we're doing that, we'll compare with how we would do the same steps via configuration files or the command line.
+[OpenFaaS](https://www.openfaas.com) is an open source project that enables you to run serverless functions anywhere via Docker Swarm or Kubernetes. For this talk, we'll deploy OpenFaaS on a Kubernetes cluster running on my laptop (via minikube).
+
+First we need to install OpenFaas. We're going to do this using Terraform.  While we're doing that, we'll compare with how we would do the same steps via configuration files or the command line.
 
 No changes quite yet to Terraform providers since we'll be using Kubernetes until OpenFaas is set up.
 
 ### Tiller and Helm
 
-We're going to use a [Helm]() chart to install OpenFaaS. We need to do some set up in order to be able to use Helm.
+We're going to use a [Helm](https://github.com/openfaas/faas-netes/blob/master/chart/openfaas/README.md) chart to install OpenFaaS. We need to do some set up in order to be able to use Helm.
 
 First, we create a Service Account for Tiller, which is the server-side component of Helm.
 
@@ -65,7 +67,7 @@ helm init --skip-refresh --upgrade --service-account tiller
 
 In Terraform, to use Helm, we specify the Helm provider and Tiller will be installed automatically.
 
-First, we'll create `helm.tf`:
+First, we'll create `helm.tf` and add the following:
 
 ```
 provider "helm" {
@@ -101,7 +103,7 @@ Initializing provider plugins...
 
 Add the OpenFaaS helm repository: 
 
-command line:
+On the command line, you would do the following:
 
 ```
 helm repo add openfaas https://openfaas.github.io/faas-netes/
@@ -116,15 +118,46 @@ data "helm_repository" "openfaas" {
 }
 ```
 
+[Data sources](https://www.terraform.io/docs/configuration/data-sources.html) in Terraform expose read-only information about your infrastructure. Sometimes these are values you set in the conf file, and othertimes they are queried via the provider's API.
+
 On the commmand line, we need to tell helm to update its charts: `helm repo update`. This isn't necessary for Terraform because it will happen automatically upon `terraform apply`.
 
 ### Generate a password for OpenFaas & Configure secret
+
+I've already run the following command and saved the password information in a `.env` file that's loaded automatically when I enter a directory.
+
+If you're following along, you'd do something like the following:
 
 ```
 export PASSWORD=$(head -c 12 /dev/urandom | shasum| cut -d' ' -f1)
 ```
 
-Need to do something like this whether or not you're using Terraform or not.
+You'd need to do something like this whether or not you're using Terraform or not. You might also use a secrets management solution such as HashiCorp Vault or ?
+
+### Create Kubernetes secret
+
+Next, we'll create a secret to use with OpenFaaS using the password we generated.
+
+Command line:
+
+```
+kubectl -n openfaas create secret generic basic-auth --from-literal=basic-auth-user=admin --from-literal=basic-auth-password="$PASSWORD"
+```
+
+Terraform, in `k8s.tf`:
+
+```
+resource "kubernetes_secret" "openfaas" {
+    metadata {
+        name      = "basic-auth"
+        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
+    }
+    data = {
+        basic-auth-user     = "${var.openfaas_username}"
+        basic-auth-password = "${var.openfaas_password}"
+    }
+}
+```
 
 ### Terraform vars
 
@@ -156,32 +189,7 @@ openfaas_username = "admin"
 openfaas_password = ""
 ```
 
-You can also use environmental variables for this and Terraform will pick up on them.
-
-### Create Kubernetes secret
-
-Next, we'll create a secret to use with OpenFaaS. 
-
-Command line:
-
-```
-kubectl -n openfaas create secret generic basic-auth --from-literal=basic-auth-user=admin --from-literal=basic-auth-password="$PASSWORD"
-```
-
-Terraform, in `k8s.tf`:
-
-```
-resource "kubernetes_secret" "openfaas" {
-    metadata {
-        name      = "basic-auth"
-        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
-    }
-    data = {
-        basic-auth-user     = "${var.openfaas_username}"
-        basic-auth-password = "${var.openfaas_password}"
-    }
-}
-```
+You can also use environmental variables for this and Terraform will pick up on them. See the [Terraform docs](https://www.terraform.io/docs/index.html) for more information on [input variables](https://www.terraform.io/docs/configuration/variables.html).
 
 ### Creating namespaces for OpenFaaS
 
@@ -271,5 +279,7 @@ resource "helm_release" "openfaas" {
 
 }
 ```
+
+We include the `depends_on` attribute to ensure that Terraform creates our tiller service account and role-binding before attempting to install this helm chart.
 
 At this point we should be able to `terraform plan` and `terraform apply` in order to deploy OpenFaaS.

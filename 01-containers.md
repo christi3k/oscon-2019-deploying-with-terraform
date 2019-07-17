@@ -2,6 +2,14 @@
 
 Minikube creates a single-node local Kubernetes cluster.
 
+Once installed, you start your cluster with:
+
+`minikube start`
+
+This takes forever on my little 11" MBA from 2014, so hopefully I've already done that.
+Here's what the output looks like:
+
+```
 😄  minikube v1.2.0 on darwin (amd64)
 💡  Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.
 🔄  Restarting existing virtualbox VM for "minikube" ...
@@ -10,11 +18,16 @@ Minikube creates a single-node local Kubernetes cluster.
 🔄  Relaunching Kubernetes v1.15.0 using kubeadm ...
 ⌛  Verifying: apiserver proxy etcd scheduler controller dns
 🏄  Done! kubectl is now configured to use "minikube"
+```
+
+Minikube provides some nice convenience commands, such as:
 
 - Show `minikube status`
 - Show `minikube dashboard`
 
 ## Let's deploy a simple container the yaml way
+
+We're going to deploy a simple nginx example by configuring a (naked!) pod and service. We'll first do this via yaml and `kubectl apply`.
 
 - Take a look at `yaml/nginx.yml`
 - Deploy with `kubectl apply -f yaml/nginx.yml`
@@ -44,7 +57,7 @@ provider "kubernetes" {}
 
 If we needed to do more configuration, we would provide additional information in this block. Since we're running locally, we don't need anything else.
 
-Anytime you change provider informatin, you need to run `terraform init`.
+Anytime you change provider information, you need to run `terraform init`.
 
 Now let's re-create our nginx-example in Terraform.
 
@@ -100,7 +113,11 @@ Now we plan: `terraform plan`.
 
 Next we apply `terraform apply`.
 
+## Visualizing Terraform resources
+
 Somthing cool is the graph command: `terraform graph | dot -Tsvg > graph.png`.
+
+## Update our pod
 
 Now let's try updating the version of nginx:
 

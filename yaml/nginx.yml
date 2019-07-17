@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: example
-    image: nginx:latest
+    image: nginx:1.16.0-alpine
     ports:
     - containerPort: 80
 ---
