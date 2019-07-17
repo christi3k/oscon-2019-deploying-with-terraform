@@ -1,5 +1,5 @@
 # dir where we're going to be doing live-coding
-./workspace/
+workspace/
 
 # Local .terraform directories
 **/.terraform/*

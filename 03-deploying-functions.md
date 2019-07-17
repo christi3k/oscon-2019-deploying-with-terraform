@@ -44,6 +44,10 @@ resource "openfaas_function" "function_hello" {
     faas_function = "hello"
     canary = "false"
   }
+  annotations {
+    prometheus.io.scrape = "false"
+  }
+}
 ```
 
 If we `terraform plan` now, Terraform will complain about this resource already existing. Terraform is correct!

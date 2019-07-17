@@ -24,6 +24,8 @@ resource "kubernetes_service_account" "tiller" {
         name      = "tiller"
         namespace = "kube-system"
     }
+
+    automount_service_account_token = true
 }
 ```
 
@@ -67,8 +69,15 @@ First, we'll create `helm.tf`:
 
 ```
 provider "helm" {
-    service_account = "tiller"
-    #tiller_image    = "gcr.io/kubernetes-helm/tiller:v2.14.1"
+  debug = true
+  install_tiller  = true
+  service_account = "tiller"
+  namespace = "kube-system"
+  tiller_image    = "gcr.io/kubernetes-helm/tiller:v2.14.1"
+
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
 }
 ```
 
@@ -85,6 +94,93 @@ Initializing provider plugins...
 ...
 * provider.helm: version = "~> 0.10"
 * provider.kubernetes: version = "~> 1.8"
+```
+
+
+### Install OpenFaaS helm repo
+
+Add the OpenFaaS helm repository: 
+
+command line:
+
+```
+helm repo add openfaas https://openfaas.github.io/faas-netes/
+```
+
+In Terraform, we'll add a `helm_repository` data source to our helm configuration (`helm.tf`):
+
+```
+data "helm_repository" "openfaas" {
+    name = "openfaas"
+    url  = "https://openfaas.github.io/faas-netes/"
+}
+```
+
+On the commmand line, we need to tell helm to update its charts: `helm repo update`. This isn't necessary for Terraform because it will happen automatically upon `terraform apply`.
+
+### Generate a password for OpenFaas & Configure secret
+
+```
+export PASSWORD=$(head -c 12 /dev/urandom | shasum| cut -d' ' -f1)
+```
+
+Need to do something like this whether or not you're using Terraform or not.
+
+### Terraform vars
+
+Notice in the Terraform config, we're using `var.openfaas_username` and `var.openfaas_password`.
+
+We need to configure these variables so they are available for interpolation (`"${}"`).
+
+There are two parts to this: `variables.tf` and `terraform.tfvars`.
+
+In `variables.tf` you define the variables that are needed without assigning any values to them:
+
+```
+variable "openfaas_username" {
+    default     = "admin"
+    description = "The username to use for OpenFaaS."
+    type        = "string"
+}
+
+variable "openfaas_password" {
+    description = "The password to use for OpenFaaS."
+    type        = "string"
+}
+```
+
+In `terraform.tfvars` you define values for the variables:
+
+```
+openfaas_username = "admin"
+openfaas_password = ""
+```
+
+You can also use environmental variables for this and Terraform will pick up on them.
+
+### Create Kubernetes secret
+
+Next, we'll create a secret to use with OpenFaaS. 
+
+Command line:
+
+```
+kubectl -n openfaas create secret generic basic-auth --from-literal=basic-auth-user=admin --from-literal=basic-auth-password="$PASSWORD"
+```
+
+Terraform, in `k8s.tf`:
+
+```
+resource "kubernetes_secret" "openfaas" {
+    metadata {
+        name      = "basic-auth"
+        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
+    }
+    data = {
+        basic-auth-user     = "${var.openfaas_username}"
+        basic-auth-password = "${var.openfaas_password}"
+    }
+}
 ```
 
 ### Creating namespaces for OpenFaaS
@@ -141,91 +237,6 @@ resource "kubernetes_namespace" "openfaas-fn" {
 }
 
 ```
-
-### Install OpenFaaS helm repo
-
-Add the OpenFaaS helm repository: 
-
-command line:
-
-```
-helm repo add openfaas https://openfaas.github.io/faas-netes/
-```
-
-In Terraform, we'll add a `helm_repository` data source to our helm configuration (`helm.tf`):
-
-```
-data "helm_repository" "openfaas" {
-    name = "openfaas"
-    url  = "https://openfaas.github.io/faas-netes/"
-}
-```
-
-On the commmand line, we need to tell helm to update its charts: `helm repo update`. This isn't necessary for Terraform because it will happen automatically upon `terraform apply`.
-
-### Generate a password for OpenFaas & Configure secret
-
-```
-export PASSWORD=$(head -c 12 /dev/urandom | shasum| cut -d' ' -f1)
-```
-
-Need to do something like this whether or not you're using Terraform or not.
-
-Next, we'll create a secret to use with OpenFaaS. 
-
-Command line:
-
-```
-kubectl -n openfaas create secret generic basic-auth --from-literal=basic-auth-user=admin --from-literal=basic-auth-password="$PASSWORD"
-```
-
-Terraform, in `k8s.tf`:
-
-```
-resource "kubernetes_secret" "openfaas" {
-    metadata {
-        name      = "basic-auth"
-        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
-    }
-    data = {
-        basic-auth-user     = "${var.openfaas_username}"
-        basic-auth-password = "${var.openfaas_password}"
-    }
-}
-```
-
-### Terraform vars
-
-Notice in the Terraform config, we're using `var.openfaas_username` and `var.openfaas_password`.
-
-We need to configure these variables so they are available for interpolation (`"${}"`).
-
-There are two parts to this: `variables.tf` and `terraform.tfvars`.
-
-In `variables.tf` you define the variables that are needed without assigning any values to them:
-
-```
-variable "openfaas_username" {
-    default     = "admin"
-    description = "The username to use for OpenFaaS."
-    type        = "string"
-}
-
-variable "openfaas_password" {
-    description = "The password to use for OpenFaaS."
-    type        = "string"
-}
-```
-
-In `terraform.tfvars` you define values for the variables:
-
-```
-openfaas_username = "admin"
-openfaas_password = ""
-```
-
-You can also use environmental variables for this and Terraform will pick up on them.
-
 ### Install OpenFaaS via Helm chart
 
 With the commmand line:
@@ -247,6 +258,7 @@ resource "helm_release" "openfaas" {
     namespace  = "${kubernetes_namespace.openfaas.metadata.0.name}"
     repository = "${data.helm_repository.openfaas.metadata.0.name}"
 
+    # Set: Value block with custom values to be merged with the values yaml.
     set {
         name  = "basic_auth"
         value = "true"

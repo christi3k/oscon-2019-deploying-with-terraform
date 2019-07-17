@@ -8,7 +8,7 @@ resource "kubernetes_pod" "nginx" {
 
   spec {
     container {
-      image = "nginx:1.7.8"
+      image = "nginx:1.16.0-alpine"
       name  = "example"
 
       port {

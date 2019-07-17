@@ -19,6 +19,8 @@ resource "kubernetes_service_account" "tiller" {
         name      = "tiller"
         namespace = "kube-system"
     }
+
+    automount_service_account_token = true
 }
 
 #create role binding for tiller:
@@ -39,8 +41,19 @@ resource "kubernetes_cluster_role_binding" "tiller" {
     }
 }
 
-#Create namespaces for OpenFaaS core components and OpenFaaS Functions:
+# create k8s sercret for use with OpenFaaS authentication
+resource "kubernetes_secret" "openfaas" {
+    metadata {
+        name      = "basic-auth"
+        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
+    }
+    data = {
+        basic-auth-user     = "${var.openfaas_username}"
+        basic-auth-password = "${var.openfaas_password}"
+    }
+}
 
+# Create namespaces for OpenFaaS core components and OpenFaaS Functions:
 resource "kubernetes_namespace" "openfaas" {
     metadata {
         name = "openfaas"
@@ -59,18 +72,6 @@ resource "kubernetes_namespace" "openfaas-fn" {
             role = "openfaas-fn"
             istio-injection = "enabled"
         }
-    }
-}
-
-# set authentication info for openfaas
-resource "kubernetes_secret" "openfaas" {
-    metadata {
-        name      = "basic-auth"
-        namespace = "${kubernetes_namespace.openfaas.metadata.0.name}"
-    }
-    data = {
-        basic-auth-user     = "${var.openfaas_username}"
-        basic-auth-password = "${var.openfaas_password}"
     }
 }
 

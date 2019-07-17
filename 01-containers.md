@@ -63,7 +63,7 @@ resource "kubernetes_pod" "nginx" {
 
   spec {
     container {
-      image = "nginx:1.7.8"
+      image = "nginx:1.16.0-alpine"
       name  = "example"
 
       port {
@@ -102,4 +102,9 @@ Next we apply `terraform apply`.
 
 Somthing cool is the graph command: `terraform graph | dot -Tsvg > graph.png`.
 
+Now let's try updating the version of nginx:
+
+```
+      image = "nginx:1.17.1-alpine"
+```
 
