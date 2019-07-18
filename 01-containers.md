@@ -49,6 +49,8 @@ In this file we're going to define a provider. [Terraform Providers](https://www
 
 Terraform configuration files are written in [HCL](https://www.terraform.io/docs/configuration/syntax.html) (HashiCorp Configuration Language).
 
+The first provider we'll use is the [kubernetes](https://www.terraform.io/docs/providers/kubernetes/index.html) one.
+
 Here's what a provider block looks like:
 
 ```

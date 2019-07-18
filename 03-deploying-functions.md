@@ -146,7 +146,7 @@ We can use the `lifecycle` stanza to specify changes we want Terraform to ignore
 
 ```
 lifecycle = {
-  ignore_changes = ["labels.favorite", "labels.favorite"]
+  ignore_changes = ["labels.uid", "labels.favorite"]
 }
 ```
 

@@ -5,7 +5,7 @@ functions:
   hello:
     lang: python3
     handler: ./hello
-    image: christi3k/hello:0.0.2
+    image: christi3k/hello:0.0.1
     labels:
       canary: false
       favorite: true
